@@ -62,6 +62,11 @@ export function Sessions() {
   const qrRefreshInterval = useRef<ReturnType<typeof setInterval> | null>(null);
   const currentSessionName = useRef<string>('');
 
+  const isTransientQrError = (err: unknown): boolean => {
+    const msg = err instanceof Error ? err.message.toLowerCase() : '';
+    return msg.includes('not ready') || msg.includes('not yet') || msg.includes('please wait');
+  };
+
   const fetchQR = useCallback(async (sessionId: string) => {
     try {
       const qr = await sessionApi.getQR(sessionId);
@@ -71,7 +76,10 @@ export function Sessions() {
         currentSessionName.current = '';
         fetchSessions();
       }
-    } catch {
+    } catch (err) {
+      // Transient: engine hasn't generated the QR yet — keep the modal open and keep polling
+      if (isTransientQrError(err)) return;
+      // Terminal: session gone, auth failed, etc.
       setQrData(null);
       currentSessionName.current = '';
       fetchSessions();
@@ -154,8 +162,13 @@ export function Sessions() {
       const qr = await sessionApi.getQR(id);
       setQrData({ sessionId: id, sessionName, qrCode: qr.qrCode });
     } catch (err) {
-      console.error('Failed to get QR:', err);
-      setError(t('sessions.qr.unavailable'));
+      if (isTransientQrError(err)) {
+        // QR not generated yet — show spinner modal and let polling fill it in
+        setQrData({ sessionId: id, sessionName, qrCode: '' });
+      } else {
+        console.error('Failed to get QR:', err);
+        setError(t('sessions.qr.unavailable'));
+      }
     }
   };
 

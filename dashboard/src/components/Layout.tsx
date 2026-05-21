@@ -19,6 +19,12 @@ import {
   ChevronLeft,
   ChevronRight,
   Languages,
+  CirclePlay,
+  Archive,
+  Radio,
+  Tag,
+  ShoppingBag,
+  Users,
 } from 'lucide-react';
 import { useTheme } from '../hooks/useTheme';
 import { type UserRole } from '../hooks/useRole';
@@ -36,6 +42,12 @@ const allNavItems = [
   { to: '/webhooks', icon: Webhook, key: 'webhooks' as const, adminOnly: false },
   { to: '/api-keys', icon: Key, key: 'apiKeys' as const, adminOnly: true },
   { to: '/message-tester', icon: Send, key: 'messageTester' as const, adminOnly: false },
+  { to: '/status', icon: CirclePlay, key: 'status' as const, adminOnly: false },
+  { to: '/auto-save', icon: Archive, key: 'autoSave' as const, adminOnly: false },
+  { to: '/event-viewer', icon: Radio, key: 'eventViewer' as const, adminOnly: false },
+  { to: '/labels', icon: Tag, key: 'labels' as const, adminOnly: false },
+  { to: '/catalog', icon: ShoppingBag, key: 'catalog' as const, adminOnly: false },
+  { to: '/groups', icon: Users, key: 'groups' as const, adminOnly: false },
   { to: '/infrastructure', icon: Server, key: 'infrastructure' as const, adminOnly: false },
   { to: '/plugins', icon: Puzzle, key: 'plugins' as const, adminOnly: true },
   { to: '/logs', icon: FileText, key: 'logs' as const, adminOnly: false },

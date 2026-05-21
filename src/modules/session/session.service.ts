@@ -537,4 +537,8 @@ export class SessionService implements OnModuleDestroy, OnModuleInit {
   isActive(id: string): boolean {
     return this.engines.has(id);
   }
+
+  getActiveSessionIds(): string[] {
+    return [...this.engines.keys()];
+  }
 }

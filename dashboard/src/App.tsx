@@ -17,6 +17,12 @@ const ApiKeys = lazy(() => import('./pages/ApiKeys').then(m => ({ default: m.Api
 const MessageTester = lazy(() => import('./pages/MessageTester').then(m => ({ default: m.MessageTester })));
 const Infrastructure = lazy(() => import('./pages/Infrastructure').then(m => ({ default: m.Infrastructure })));
 const Plugins = lazy(() => import('./pages/Plugins'));
+const Status = lazy(() => import('./pages/Status').then(m => ({ default: m.Status })));
+const AutoSave = lazy(() => import('./pages/AutoSave').then(m => ({ default: m.AutoSave })));
+const EventViewer = lazy(() => import('./pages/EventViewer').then(m => ({ default: m.EventViewer })));
+const Labels = lazy(() => import('./pages/Labels').then(m => ({ default: m.Labels })));
+const Catalog = lazy(() => import('./pages/Catalog').then(m => ({ default: m.Catalog })));
+const Groups = lazy(() => import('./pages/Groups').then(m => ({ default: m.Groups })));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -105,6 +111,12 @@ function AppContent() {
             {role === 'admin' && <Route path="api-keys" element={<ApiKeys />} />}
             <Route path="logs" element={<Logs />} />
             <Route path="message-tester" element={<MessageTester />} />
+            <Route path="status" element={<Status />} />
+            <Route path="auto-save" element={<AutoSave />} />
+            <Route path="event-viewer" element={<EventViewer />} />
+            <Route path="labels" element={<Labels />} />
+            <Route path="catalog" element={<Catalog />} />
+            <Route path="groups" element={<Groups />} />
             <Route path="infrastructure" element={<Infrastructure />} />
             {role === 'admin' && <Route path="plugins" element={<Plugins />} />}
             <Route path="*" element={<Navigate to="/" replace />} />

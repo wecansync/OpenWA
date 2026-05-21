@@ -59,9 +59,15 @@
     "webhooks": "Webhooks",
     "apiKeys": "API Keys",
     "messageTester": "Message Tester",
+    "status": "Status",
     "infrastructure": "Infrastructure",
     "plugins": "Plugins",
-    "logs": "Logs"
+    "logs": "Logs",
+    "autoSave": "Auto-Save",
+    "eventViewer": "Event Viewer",
+    "labels": "Labels",
+    "catalog": "Catalog",
+    "groups": "Groups"
   },
   "errorBoundary": {
     "title": "Something went wrong",
@@ -88,7 +94,19 @@
       "activeSessions": "Active Sessions",
       "messagesToday": "Messages Today",
       "webhooksConfigured": "Webhooks Configured",
-      "apiCalls": "API Calls (24h)"
+      "totalMessages": "Total Messages"
+    },
+    "chart": {
+      "title": "Message Activity",
+      "sent": "Sent",
+      "received": "Received",
+      "bySession": "Per-Session Breakdown",
+      "noData": "No message data for this period",
+      "period": {
+        "24h": "24h",
+        "7d": "7d",
+        "30d": "30d"
+      }
     },
     "sessionsOverview": "Sessions Overview",
     "showingSessions": "Showing {{shown}} of {{total}} sessions",
@@ -303,6 +321,10 @@
       "warn": "Warning",
       "error": "Error"
     },
+    "action": {
+      "all": "All Actions"
+    },
+    "sessionPlaceholder": "Filter by session…",
     "columns": {
       "timestamp": "Timestamp",
       "action": "Action",
@@ -359,7 +381,8 @@
       "messageId": "Message ID",
       "error": "Error"
     },
-    "sendFailed": "Failed to send message"
+    "sendFailed": "Failed to send message",
+    "scheduleFor": "Schedule for later"
   },
   "infrastructure": {
     "title": "Infrastructure",
@@ -496,6 +519,9 @@
       "sessionDataPath": "Session Data Path",
       "browserArgs": "Browser Arguments",
       "noOptions": "No configuration options available for this plugin",
+      "jsonLabel": "Plugin Configuration (JSON)",
+      "jsonHint": "Edit the plugin configuration as JSON. Invalid JSON will not be saved.",
+      "jsonError": "Invalid JSON — please fix syntax errors before saving.",
       "save": "Save Configuration"
     },
     "toasts": {
@@ -508,5 +534,108 @@
       "savedDesc": "Server restart required to apply changes.",
       "saveFailed": "Save Failed"
     }
+  },
+  "status": {
+    "title": "Status",
+    "selectSession": "Select a session",
+    "noContacts": "No contacts with active statuses",
+    "noItems": "No status items found",
+    "selectContact": "Select a contact to view their statuses",
+    "download": "Download",
+    "downloading": "Downloading…",
+    "items": "items",
+    "unread": "unread",
+    "typeImage": "Image",
+    "typeVideo": "Video",
+    "typeAudio": "Audio",
+    "typeGif": "GIF",
+    "typeText": "Text",
+    "expired": "Expired",
+    "notConnected": "Session is not connected",
+    "loadError": "Failed to load statuses",
+    "preview": "Preview",
+    "previewing": "Loading…",
+    "refresh": "Refresh",
+    "searchContacts": "Search contacts…",
+    "closePreview": "Close preview",
+    "downloadAll": "Download All",
+    "downloadingAll": "Downloading…",
+    "downloadAllContact": "Download all media from this contact"
+  },
+  "autoSave": {
+    "title": "Status Auto-Save",
+    "enabled": "Enable auto-save",
+    "intervalMinutes": "Interval (minutes)",
+    "intervalHint": "How often to poll for new statuses (min: 5, max: 1440)",
+    "savePath": "Save path",
+    "savePathHint": "Directory where media files will be saved",
+    "sessions": "Sessions to monitor",
+    "sessionsPlaceholder": "session1, session2 (leave empty for all)",
+    "sessionsHint": "Comma-separated session IDs. Empty = all active sessions.",
+    "save": "Save",
+    "saving": "Saving…",
+    "cancel": "Cancel",
+    "runNow": "Run Now",
+    "running": "Running…",
+    "jobQueued": "Auto-save job queued successfully"
+  },
+  "eventViewer": {
+    "title": "Event Viewer",
+    "connected": "Connected",
+    "disconnected": "Disconnected",
+    "pause": "Pause",
+    "resume": "Resume",
+    "clear": "Clear log",
+    "allSessions": "All sessions",
+    "allEvents": "All",
+    "noEvents": "Waiting for events…"
+  },
+  "labels": {
+    "title": "Contact Labels",
+    "selectSession": "Select a session",
+    "allLabels": "Labels",
+    "noLabels": "No labels found",
+    "noChats": "No chats with this label",
+    "selectLabel": "Select a label to view its chats",
+    "businessOnly": "Labels are only available on WhatsApp Business accounts",
+    "chatIdPlaceholder": "Chat ID (e.g. 9721234@c.us)",
+    "addChat": "Add",
+    "removeLabel": "Remove label from chat"
+  },
+  "catalog": {
+    "title": "Product Catalog",
+    "selectSession": "Select a session",
+    "businessOnly": "Catalog is only available on WhatsApp Business accounts",
+    "unnamed": "Business Catalog",
+    "noProducts": "No products in catalog",
+    "page": "Page",
+    "sendProduct": "Send Product",
+    "sendCatalog": "Send Catalog",
+    "sendCatalogTitle": "Send Full Catalog",
+    "chatIdPlaceholder": "Recipient chat ID",
+    "captionPlaceholder": "Caption (optional)",
+    "send": "Send",
+    "sent": "Sent successfully!"
+  },
+  "groups": {
+    "title": "Group Management",
+    "selectSession": "Select a session",
+    "createGroup": "Create Group",
+    "noGroups": "No groups found",
+    "selectGroup": "Select a group to manage it",
+    "notFound": "Group not found",
+    "groupName": "Group name",
+    "participantsPlaceholder": "Participant numbers, comma-separated (e.g. 9721234567, 9729876543)",
+    "create": "Create",
+    "cancel": "Cancel",
+    "subject": "Subject",
+    "description": "Description",
+    "participants": "Participants",
+    "addParticipantsPlaceholder": "Numbers, comma-separated",
+    "removeParticipant": "Remove participant",
+    "leaveGroup": "Leave Group",
+    "leaveConfirm": "Are you sure you want to leave this group?",
+    "save": "Save",
+    "edit": "Edit"
   }
 }

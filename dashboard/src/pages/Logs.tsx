@@ -7,29 +7,67 @@ import { useLogsQuery } from '../hooks/queries';
 import { PageHeader } from '../components/PageHeader';
 import './Logs.css';
 
+const AUDIT_ACTIONS = [
+  'api_key_created','api_key_used','api_key_revoked','api_key_deleted','api_key_auth_failed',
+  'session_created','session_started','session_stopped','session_deleted',
+  'session_qr_generated','session_connected','session_disconnected',
+  'message_sent','message_failed',
+  'webhook_created','webhook_deleted','webhook_triggered','webhook_failed',
+];
+
 export function Logs() {
   const { t } = useTranslation();
   useDocumentTitle(t('logs.title'));
   const [searchQuery, setSearchQuery] = useState('');
   const [severityFilter, setSeverityFilter] = useState('all');
+  const [actionFilter, setActionFilter] = useState('all');
+  const [sessionFilter, setSessionFilter] = useState('');
   const [page, setPage] = useState(1);
   const limit = 20;
 
   const severityParam = severityFilter !== 'all' ? severityFilter : undefined;
-  const { data, isLoading: loading } = useLogsQuery({ severity: severityParam, page, limit });
+  const actionParam = actionFilter !== 'all' ? actionFilter : undefined;
+  const sessionParam = sessionFilter.trim() || undefined;
+  const { data, isLoading: loading } = useLogsQuery({ severity: severityParam, action: actionParam, sessionId: sessionParam, page, limit });
   const logs: AuditLog[] = data?.data ?? [];
   const total: number = data?.total ?? 0;
 
   const filteredLogs = logs.filter(log => {
-    const matchesSearch =
-      log.action.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (log.errorMessage || '').toLowerCase().includes(searchQuery.toLowerCase());
-    return matchesSearch;
+    if (!searchQuery) return true;
+    const q = searchQuery.toLowerCase();
+    return (
+      log.action.toLowerCase().includes(q) ||
+      (log.errorMessage || '').toLowerCase().includes(q) ||
+      (log.sessionId || '').toLowerCase().includes(q) ||
+      (log.apiKeyName || '').toLowerCase().includes(q)
+    );
   });
 
   const totalPages = Math.ceil(total / limit);
 
   const formatTimestamp = (date: string) => new Date(date).toLocaleString();
+
+  const handleExportCsv = () => {
+    const headers = ['Timestamp','Action','Severity','Session','API Key','IP','Path','Status Code'];
+    const rows = filteredLogs.map(l => [
+      formatTimestamp(l.createdAt),
+      l.action,
+      l.severity,
+      l.sessionName || l.sessionId || '',
+      l.apiKeyName || '',
+      l.ipAddress || '',
+      l.path || '',
+      String(l.statusCode ?? ''),
+    ]);
+    const csv = [headers, ...rows].map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\n');
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `audit-logs-${new Date().toISOString().slice(0,10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
 
   if (loading && logs.length === 0) {
     return (
@@ -48,7 +86,7 @@ export function Logs() {
         title={t('logs.title')}
         subtitle={t('logs.subtitle')}
         actions={
-          <button className="btn-secondary">
+          <button className="btn-secondary" onClick={handleExportCsv}>
             <Download size={18} />
             {t('logs.exportCsv')}
           </button>
@@ -70,16 +108,35 @@ export function Logs() {
           <Filter size={16} />
           <select
             value={severityFilter}
-            onChange={e => {
-              setSeverityFilter(e.target.value);
-              setPage(1);
-            }}
+            onChange={e => { setSeverityFilter(e.target.value); setPage(1); }}
           >
             <option value="all">{t('logs.severity.all')}</option>
             <option value="info">{t('logs.severity.info')}</option>
             <option value="warn">{t('logs.severity.warn')}</option>
             <option value="error">{t('logs.severity.error')}</option>
           </select>
+        </div>
+
+        <div className="filter-group">
+          <select
+            value={actionFilter}
+            onChange={e => { setActionFilter(e.target.value); setPage(1); }}
+          >
+            <option value="all">{t('logs.action.all')}</option>
+            {AUDIT_ACTIONS.map(a => (
+              <option key={a} value={a}>{a.replace(/_/g, ' ')}</option>
+            ))}
+          </select>
+        </div>
+
+        <div className="search-input" style={{ maxWidth: 200 }}>
+          <Search size={16} />
+          <input
+            type="text"
+            placeholder={t('logs.sessionPlaceholder')}
+            value={sessionFilter}
+            onChange={e => { setSessionFilter(e.target.value); setPage(1); }}
+          />
         </div>
       </div>
 

@@ -110,20 +110,39 @@ export interface Label {
 }
 
 // Phase 3: Status/Stories
+export interface StatusContact {
+  contactId: string;
+  name?: string;
+  pushName?: string;
+  profilePicUrl?: string;
+  totalCount: number;
+  unreadCount: number;
+  lastTimestamp: Date;
+}
+
 export interface Status {
   id: string;
+  messageId: string;
   contact: {
     id: string;
     name?: string;
     pushName?: string;
   };
-  type: 'text' | 'image' | 'video';
+  type: 'text' | 'image' | 'video' | 'audio' | 'gif';
+  hasMedia: boolean;
   caption?: string;
   mediaUrl?: string;
   backgroundColor?: string;
   font?: number;
   timestamp: Date;
   expiresAt: Date;
+}
+
+export interface MediaDownloadResult {
+  data: string;
+  mimetype: string;
+  filename?: string;
+  filesize?: number;
 }
 
 export interface TextStatusOptions {
@@ -280,8 +299,9 @@ export interface IWhatsAppEngine {
   getChannelMessages(channelId: string, limit?: number): Promise<ChannelMessage[]>;
 
   // Status/Stories (Phase 3)
-  getContactStatuses(): Promise<Status[]>;
+  getContactStatuses(): Promise<StatusContact[]>;
   getContactStatus(contactId: string): Promise<Status[]>;
+  downloadStatusMedia(contactId: string, messageId: string): Promise<MediaDownloadResult>;
   postTextStatus(text: string, options?: TextStatusOptions): Promise<StatusResult>;
   postImageStatus(media: MediaInput, caption?: string): Promise<StatusResult>;
   postVideoStatus(media: MediaInput, caption?: string): Promise<StatusResult>;

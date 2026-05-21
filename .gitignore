@@ -1,3 +1,6 @@
+# Local test pages
+test/
+
 # Dependencies
 node_modules/
 .pnp
@@ -72,3 +75,5 @@ uploads/
 docs/plans/
 CLAUDE.md
 _docs/
+/specs
+/.specify

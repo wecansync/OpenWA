@@ -1,4 +1,4 @@
-import { Controller, Post, Get, Param, Body, Query, HttpCode, HttpStatus } from '@nestjs/common';
+import { Controller, Post, Get, Delete, Param, Body, Query, HttpCode, HttpStatus } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiParam, ApiQuery } from '@nestjs/swagger';
 import { MessageService } from './message.service';
 import { BulkMessageService } from './bulk-message.service';
@@ -360,5 +360,38 @@ export class MessageController {
       status: batch.status,
       progress: batch.progress,
     };
+  }
+
+  @Post('schedule-text')
+  @RequireRole(ApiKeyRole.OPERATOR)
+  @ApiOperation({ summary: 'Schedule a text message to be sent at a future time' })
+  @ApiParam({ name: 'sessionId', description: 'Session ID' })
+  @ApiResponse({ status: 201, description: 'Message scheduled' })
+  @ApiResponse({ status: 400, description: 'scheduledAt missing or less than 60s in future' })
+  async scheduleText(
+    @Param('sessionId') sessionId: string,
+    @Body() dto: SendTextMessageDto,
+  ): Promise<{ jobId: string; scheduledAt: string }> {
+    return this.messageService.scheduleText(sessionId, dto);
+  }
+
+  @Get('scheduled')
+  @ApiOperation({ summary: 'List all pending scheduled messages for a session' })
+  @ApiParam({ name: 'sessionId', description: 'Session ID' })
+  @ApiResponse({ status: 200, description: 'List of scheduled messages' })
+  async getScheduled(@Param('sessionId') sessionId: string) {
+    return this.messageService.getScheduledMessages(sessionId);
+  }
+
+  @Delete('scheduled/:jobId')
+  @RequireRole(ApiKeyRole.OPERATOR)
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({ summary: 'Cancel a scheduled message' })
+  @ApiParam({ name: 'sessionId', description: 'Session ID' })
+  @ApiParam({ name: 'jobId', description: 'Job ID returned by schedule-text' })
+  @ApiResponse({ status: 204, description: 'Scheduled message cancelled' })
+  @ApiResponse({ status: 400, description: 'Job not found or belongs to a different session' })
+  async cancelScheduled(@Param('sessionId') sessionId: string, @Param('jobId') jobId: string): Promise<void> {
+    await this.messageService.cancelScheduledMessage(sessionId, jobId);
   }
 }

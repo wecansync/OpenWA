@@ -220,3 +220,41 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* Message scheduling */
+.schedule-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.schedule-toggle-label {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.875rem;
+  color: var(--text-secondary, #718096);
+  cursor: pointer;
+  user-select: none;
+}
+
+.schedule-toggle-label input[type="checkbox"] {
+  cursor: pointer;
+  width: 15px;
+  height: 15px;
+}
+
+.schedule-datetime {
+  padding: 0.375rem 0.625rem;
+  border-radius: 6px;
+  border: 1px solid var(--border-color, #e2e8f0);
+  background: var(--input-bg, #fff);
+  color: var(--text-primary, #1a202c);
+  font-size: 0.875rem;
+}
+
+.schedule-datetime:focus {
+  outline: none;
+  border-color: var(--accent-color, #3182ce);
+}

@@ -70,6 +70,8 @@ export default function Plugins() {
     sessionDataPath: '/data/sessions',
     browserArgs: '--no-sandbox --disable-gpu',
   });
+  const [jsonEditorText, setJsonEditorText] = useState('{}');
+  const [jsonError, setJsonError] = useState('');
   const [savingConfig, setSavingConfig] = useState(false);
 
   const refetchAll = () => {
@@ -112,13 +114,35 @@ export default function Plugins() {
 
   const handleOpenConfig = (plugin: Plugin) => {
     setConfigPlugin(plugin);
+    setJsonEditorText(JSON.stringify(plugin.config || {}, null, 2));
+    setJsonError('');
     setShowConfigModal(true);
   };
 
   const handleSaveConfig = async () => {
+    if (!configPlugin) return;
     setSavingConfig(true);
     try {
+      if (configPlugin.type === 'engine') {
+        await pluginsApi.updateConfig(configPlugin.id, {
+          type: engineConfig.type,
+          headless: engineConfig.headless,
+          sessionDataPath: engineConfig.sessionDataPath,
+          browserArgs: engineConfig.browserArgs,
+        });
+      } else {
+        let parsed: Record<string, unknown>;
+        try {
+          parsed = JSON.parse(jsonEditorText) as Record<string, unknown>;
+        } catch {
+          setJsonError(t('plugins.config.jsonError'));
+          setSavingConfig(false);
+          return;
+        }
+        await pluginsApi.updateConfig(configPlugin.id, parsed);
+      }
       toast.success(t('plugins.toasts.savedTitle'), t('plugins.toasts.savedDesc'));
+      refetchAll();
       setShowConfigModal(false);
     } catch (err) {
       toast.error(t('plugins.toasts.saveFailed'), err instanceof Error ? err.message : t('common.unknownError'));
@@ -392,9 +416,33 @@ export default function Plugins() {
                   </div>
                 </>
               ) : (
-                <div className="no-config">
-                  <Settings size={48} style={{ opacity: 0.3 }} />
-                  <p>{t('plugins.config.noOptions')}</p>
+                <div className="config-form">
+                  <div className="form-group">
+                    <label>{t('plugins.config.jsonLabel')}</label>
+                    <small style={{ color: 'var(--text-secondary)', marginBottom: '0.4rem', display: 'block' }}>
+                      {t('plugins.config.jsonHint')}
+                    </small>
+                    <textarea
+                      value={jsonEditorText}
+                      onChange={e => { setJsonEditorText(e.target.value); setJsonError(''); }}
+                      rows={10}
+                      style={{
+                        width: '100%',
+                        fontFamily: 'monospace',
+                        fontSize: '0.8rem',
+                        padding: '0.5rem',
+                        borderRadius: '6px',
+                        border: `1px solid ${jsonError ? '#e53e3e' : 'var(--border-color, #e2e8f0)'}`,
+                        background: 'var(--input-bg, #fff)',
+                        color: 'var(--text-primary)',
+                        resize: 'vertical',
+                        boxSizing: 'border-box',
+                      }}
+                    />
+                    {jsonError && (
+                      <p style={{ color: '#e53e3e', fontSize: '0.8rem', marginTop: '0.25rem' }}>{jsonError}</p>
+                    )}
+                  </div>
                 </div>
               )}
             </div>
@@ -403,11 +451,9 @@ export default function Plugins() {
               <button className="btn-secondary" onClick={() => setShowConfigModal(false)}>
                 {t('common.cancel')}
               </button>
-              {configPlugin.type === 'engine' && (
-                <button className="btn-primary" onClick={handleSaveConfig} disabled={savingConfig}>
-                  {savingConfig ? <Loader2 size={16} className="animate-spin" /> : t('plugins.config.save')}
-                </button>
-              )}
+              <button className="btn-primary" onClick={handleSaveConfig} disabled={savingConfig}>
+                {savingConfig ? <Loader2 size={16} className="animate-spin" /> : t('plugins.config.save')}
+              </button>
             </div>
           </div>
         </div>

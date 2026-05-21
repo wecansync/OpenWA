@@ -60,6 +60,10 @@ export class ApiKeyGuard implements CanActivate {
       return authHeader.substring(7);
     }
 
+    // Support ?apiKey= query param (used by browser download links that can't set headers)
+    const queryApiKey = request.query['apiKey'] as string | undefined;
+    if (queryApiKey) return queryApiKey;
+
     return undefined;
   }
 

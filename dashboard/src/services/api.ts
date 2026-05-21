@@ -249,10 +249,11 @@ export const apiKeyApi = {
 // =============================================================================
 
 export const auditApi = {
-  list: (params?: { action?: string; severity?: string; limit?: number; offset?: number }) => {
+  list: (params?: { action?: string; severity?: string; sessionId?: string; limit?: number; offset?: number }) => {
     const query = new URLSearchParams();
     if (params?.action) query.set('action', params.action);
     if (params?.severity) query.set('severity', params.severity);
+    if (params?.sessionId) query.set('sessionId', params.sessionId);
     if (params?.limit) query.set('limit', String(params.limit));
     if (params?.offset) query.set('offset', String(params.offset));
     const queryStr = query.toString();
@@ -290,6 +291,17 @@ export const messageApi = {
       method: 'POST',
       body: JSON.stringify({ chatId, url, filename }),
     }),
+  scheduleText: (sessionId: string, chatId: string, text: string, scheduledAt: string) =>
+    request<{ jobId: string; scheduledAt: string }>(`/sessions/${sessionId}/messages/schedule-text`, {
+      method: 'POST',
+      body: JSON.stringify({ chatId, text, scheduledAt }),
+    }),
+  getScheduled: (sessionId: string) =>
+    request<{ jobId: string; chatId: string; text: string; scheduledAt: string }[]>(
+      `/sessions/${sessionId}/messages/scheduled`,
+    ),
+  cancelScheduled: (sessionId: string, jobId: string) =>
+    request<void>(`/sessions/${sessionId}/messages/scheduled/${jobId}`, { method: 'DELETE' }),
 };
 
 // =============================================================================
@@ -340,6 +352,24 @@ export const settingsApi = {
     }),
 };
 
+export interface AutoSaveConfig {
+  enabled: boolean;
+  intervalMinutes: number;
+  savePath: string;
+  sessions: string[];
+}
+
+export const autoSaveApi = {
+  getConfig: () => request<AutoSaveConfig>('/settings/status-auto-save'),
+  updateConfig: (config: Partial<AutoSaveConfig>) =>
+    request<AutoSaveConfig>('/settings/status-auto-save', {
+      method: 'PUT',
+      body: JSON.stringify(config),
+    }),
+  runNow: () =>
+    request<{ queued: boolean }>('/settings/status-auto-save/run-now', { method: 'PUT' }),
+};
+
 // =============================================================================
 // Plugin Types
 // =============================================================================
@@ -371,6 +401,109 @@ export interface Engine {
 // Plugins API
 // =============================================================================
 
+// =============================================================================
+// Status API
+// =============================================================================
+
+export interface StatusContact {
+  contactId: string;
+  name?: string;
+  pushName?: string;
+  profilePicUrl?: string;
+  totalCount: number;
+  unreadCount: number;
+  lastTimestamp: string;
+}
+
+export interface StatusItem {
+  messageId: string;
+  type: 'text' | 'image' | 'video' | 'audio' | 'gif';
+  hasMedia: boolean;
+  caption?: string;
+  text?: string;
+  timestamp: string;
+  expiresAt: string;
+}
+
+async function fetchStatusBlob(sessionId: string, contactId: string, messageId: string): Promise<Response> {
+  const apiKey = sessionStorage.getItem('openwa_api_key') ?? '';
+  const url = `${API_BASE_URL}/sessions/${sessionId}/status/${encodeURIComponent(contactId)}/${encodeURIComponent(messageId)}/download`;
+  const res = await fetch(url, { headers: { 'X-API-Key': apiKey } });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ message: res.statusText }));
+    throw new Error((err as { message?: string }).message || `HTTP ${res.status}`);
+  }
+  return res;
+}
+
+export const statusApi = {
+  listContacts: (sessionId: string) =>
+    request<{ contacts: StatusContact[] }>(`/sessions/${sessionId}/status`),
+  listItems: (sessionId: string, contactId: string) =>
+    request<{ items: StatusItem[] }>(`/sessions/${sessionId}/status/${encodeURIComponent(contactId)}/items`),
+  downloadMedia: async (sessionId: string, contactId: string, messageId: string): Promise<void> => {
+    const res = await fetchStatusBlob(sessionId, contactId, messageId);
+    const disposition = res.headers.get('content-disposition') ?? '';
+    const match = disposition.match(/filename="([^"]+)"/);
+    const filename = match?.[1] ?? `status-${messageId}.bin`;
+    const blob = await res.blob();
+    const objectUrl = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = objectUrl;
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(objectUrl);
+  },
+  previewMedia: async (sessionId: string, contactId: string, messageId: string): Promise<{ objectUrl: string; mimeType: string }> => {
+    const res = await fetchStatusBlob(sessionId, contactId, messageId);
+    const mimeType = res.headers.get('content-type') ?? 'application/octet-stream';
+    const blob = await res.blob();
+    return { objectUrl: URL.createObjectURL(blob), mimeType };
+  },
+  downloadAllContactMedia: async (sessionId: string, contactId: string): Promise<void> => {
+    const apiKey = sessionStorage.getItem('openwa_api_key') ?? '';
+    const url = `${API_BASE_URL}/sessions/${sessionId}/status/${encodeURIComponent(contactId)}/download-all`;
+    const res = await fetch(url, { headers: { 'X-API-Key': apiKey } });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ message: res.statusText }));
+      throw new Error((err as { message?: string }).message || `HTTP ${res.status}`);
+    }
+    const disposition = res.headers.get('content-disposition') ?? '';
+    const match = disposition.match(/filename="([^"]+)"/);
+    const filename = match?.[1] ?? `statuses-${contactId}.zip`;
+    const blob = await res.blob();
+    const objectUrl = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = objectUrl;
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(objectUrl);
+  },
+  downloadAllMedia: async (sessionId: string): Promise<void> => {
+    const apiKey = sessionStorage.getItem('openwa_api_key') ?? '';
+    const url = `${API_BASE_URL}/sessions/${sessionId}/status/download-all`;
+    const res = await fetch(url, { headers: { 'X-API-Key': apiKey } });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ message: res.statusText }));
+      throw new Error((err as { message?: string }).message || `HTTP ${res.status}`);
+    }
+    const disposition = res.headers.get('content-disposition') ?? '';
+    const match = disposition.match(/filename="([^"]+)"/);
+    const filename = match?.[1] ?? `all-statuses-${sessionId}.zip`;
+    const blob = await res.blob();
+    const objectUrl = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = objectUrl;
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(objectUrl);
+  },
+};
+
+// =============================================================================
+// Plugins API
+// =============================================================================
+
 export const pluginsApi = {
   list: () => request<Plugin[]>('/plugins'),
   get: (id: string) => request<Plugin>(`/plugins/${id}`),
@@ -390,4 +523,145 @@ export const pluginsApi = {
   healthCheck: (id: string) => request<{ healthy: boolean; message?: string }>(`/plugins/${id}/health`),
   getEngines: () => request<Engine[]>('/infra/engines'),
   getCurrentEngine: () => request<{ engineType: string }>('/infra/engines/current'),
+};
+
+// =============================================================================
+// Labels API (WhatsApp Business)
+// =============================================================================
+
+export interface Label {
+  id: string;
+  name: string;
+  hexColor?: string;
+}
+
+export const labelsApi = {
+  list: (sessionId: string) =>
+    request<Label[]>(`/sessions/${sessionId}/labels`),
+  getById: (sessionId: string, labelId: string) =>
+    request<Label>(`/sessions/${sessionId}/labels/${encodeURIComponent(labelId)}`),
+  addToChat: (sessionId: string, chatId: string, labelId: string) =>
+    request<{ success: boolean }>(`/sessions/${sessionId}/labels/chat/${encodeURIComponent(chatId)}`, {
+      method: 'POST',
+      body: JSON.stringify({ labelId }),
+    }),
+  removeFromChat: (sessionId: string, chatId: string, labelId: string) =>
+    request<{ success: boolean }>(`/sessions/${sessionId}/labels/chat/${encodeURIComponent(chatId)}/${encodeURIComponent(labelId)}`, {
+      method: 'DELETE',
+    }),
+};
+
+// =============================================================================
+// Catalog API (WhatsApp Business)
+// =============================================================================
+
+export interface CatalogInfo {
+  name?: string;
+  description?: string;
+}
+
+export interface Product {
+  id: string;
+  name: string;
+  imageUrl?: string;
+  price?: string;
+  currency?: string;
+}
+
+export const catalogApi = {
+  getCatalog: (sessionId: string) =>
+    request<CatalogInfo>(`/sessions/${sessionId}/catalog`),
+  getProducts: (sessionId: string, page = 1, limit = 20) =>
+    request<{ products: Product[]; hasMore: boolean }>(`/sessions/${sessionId}/catalog/products?page=${page}&limit=${limit}`),
+  getProduct: (sessionId: string, productId: string) =>
+    request<Product>(`/sessions/${sessionId}/catalog/products/${encodeURIComponent(productId)}`),
+  sendProduct: (sessionId: string, chatId: string, productId: string, body?: string) =>
+    request<{ messageId: string }>(`/sessions/${sessionId}/messages/send-product`, {
+      method: 'POST',
+      body: JSON.stringify({ chatId, productId, body }),
+    }),
+  sendCatalog: (sessionId: string, chatId: string, body?: string) =>
+    request<{ messageId: string }>(`/sessions/${sessionId}/messages/send-catalog`, {
+      method: 'POST',
+      body: JSON.stringify({ chatId, body }),
+    }),
+};
+
+// =============================================================================
+// Groups API
+// =============================================================================
+
+export interface Group {
+  id: string;
+  name: string;
+  description?: string;
+  participants?: { id: string; name?: string }[];
+}
+
+// =============================================================================
+// Stats API
+// =============================================================================
+
+export interface OverviewStats {
+  sessions: { active: number; total: number; byStatus: Record<string, number> };
+  messages: { sent: number; received: number; failed: number; today: { sent: number; received: number } };
+}
+
+export interface TimeSeriesPoint {
+  timestamp: string;
+  sent: number;
+  received: number;
+}
+
+export interface MessageStats {
+  timeSeries: TimeSeriesPoint[];
+  byType: Record<string, number>;
+  bySession: Array<{ sessionId: string; name: string; sent: number; received: number }>;
+  topChats: Array<{ chatId: string; messageCount: number }>;
+}
+
+export const statsApi = {
+  getOverview: () => request<OverviewStats>('/stats/overview'),
+  getMessageStats: (period: '24h' | '7d' | '30d') =>
+    request<MessageStats>(`/stats/messages?period=${period}`),
+};
+
+// =============================================================================
+// Groups API
+// =============================================================================
+
+export const groupsApi = {
+  list: (sessionId: string) =>
+    request<Group[]>(`/sessions/${sessionId}/groups`),
+  getById: (sessionId: string, groupId: string) =>
+    request<Group>(`/sessions/${sessionId}/groups/${encodeURIComponent(groupId)}`),
+  create: (sessionId: string, name: string, participants: string[]) =>
+    request<Group>(`/sessions/${sessionId}/groups`, {
+      method: 'POST',
+      body: JSON.stringify({ name, participants }),
+    }),
+  addParticipants: (sessionId: string, groupId: string, participants: string[]) =>
+    request<{ success: boolean }>(`/sessions/${sessionId}/groups/${encodeURIComponent(groupId)}/participants`, {
+      method: 'POST',
+      body: JSON.stringify({ participants }),
+    }),
+  removeParticipants: (sessionId: string, groupId: string, participants: string[]) =>
+    request<{ success: boolean }>(`/sessions/${sessionId}/groups/${encodeURIComponent(groupId)}/participants`, {
+      method: 'DELETE',
+      body: JSON.stringify({ participants }),
+    }),
+  updateSubject: (sessionId: string, groupId: string, subject: string) =>
+    request<{ success: boolean }>(`/sessions/${sessionId}/groups/${encodeURIComponent(groupId)}/subject`, {
+      method: 'PUT',
+      body: JSON.stringify({ subject }),
+    }),
+  updateDescription: (sessionId: string, groupId: string, description: string) =>
+    request<{ success: boolean }>(`/sessions/${sessionId}/groups/${encodeURIComponent(groupId)}/description`, {
+      method: 'PUT',
+      body: JSON.stringify({ description }),
+    }),
+  leave: (sessionId: string, groupId: string) =>
+    request<{ success: boolean }>(`/sessions/${sessionId}/groups/${encodeURIComponent(groupId)}/leave`, {
+      method: 'POST',
+    }),
 };

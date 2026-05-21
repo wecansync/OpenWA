@@ -59,9 +59,15 @@
     "webhooks": "Webhooks",
     "apiKeys": "מפתחות API",
     "messageTester": "בדיקת הודעות",
+    "status": "סטטוסים",
     "infrastructure": "תשתית",
     "plugins": "תוספים",
-    "logs": "לוגים"
+    "logs": "לוגים",
+    "autoSave": "שמירה אוטומטית",
+    "eventViewer": "צופה אירועים",
+    "labels": "תוויות",
+    "catalog": "קטלוג",
+    "groups": "קבוצות"
   },
   "errorBoundary": {
     "title": "משהו השתבש",
@@ -88,7 +94,19 @@
       "activeSessions": "Sessions פעילים",
       "messagesToday": "הודעות היום",
       "webhooksConfigured": "Webhooks מוגדרים",
-      "apiCalls": "קריאות API (24 שעות)"
+      "totalMessages": "סה״כ הודעות"
+    },
+    "chart": {
+      "title": "פעילות הודעות",
+      "sent": "נשלחו",
+      "received": "התקבלו",
+      "bySession": "פירוט לפי Session",
+      "noData": "אין נתוני הודעות לתקופה זו",
+      "period": {
+        "24h": "24ש׳",
+        "7d": "7י׳",
+        "30d": "30י׳"
+      }
     },
     "sessionsOverview": "סקירת Sessions",
     "showingSessions": "מוצגים {{shown}} מתוך {{total}} Sessions",
@@ -303,6 +321,10 @@
       "warn": "אזהרה",
       "error": "שגיאה"
     },
+    "action": {
+      "all": "כל הפעולות"
+    },
+    "sessionPlaceholder": "סנן לפי Session…",
     "columns": {
       "timestamp": "חותמת זמן",
       "action": "פעולה",
@@ -359,7 +381,8 @@
       "messageId": "מזהה הודעה",
       "error": "שגיאה"
     },
-    "sendFailed": "שליחת ההודעה נכשלה"
+    "sendFailed": "שליחת ההודעה נכשלה",
+    "scheduleFor": "תזמן לשליחה מאוחרת"
   },
   "infrastructure": {
     "title": "תשתית",
@@ -496,6 +519,9 @@
       "sessionDataPath": "נתיב נתוני Session",
       "browserArgs": "ארגומנטים של הדפדפן",
       "noOptions": "אין אפשרויות הגדרה זמינות עבור תוסף זה",
+      "jsonLabel": "הגדרת תוסף (JSON)",
+      "jsonHint": "ערוך את הגדרות התוסף כ-JSON. JSON שגוי לא יישמר.",
+      "jsonError": "JSON שגוי — יש לתקן שגיאות תחביר לפני השמירה.",
       "save": "שמירת תצורה"
     },
     "toasts": {
@@ -508,5 +534,108 @@
       "savedDesc": "נדרש אתחול שרת כדי להחיל את השינויים.",
       "saveFailed": "השמירה נכשלה"
     }
+  },
+  "status": {
+    "title": "סטטוסים",
+    "selectSession": "בחר סשן",
+    "noContacts": "אין אנשי קשר עם סטטוסים פעילים",
+    "noItems": "לא נמצאו פריטי סטטוס",
+    "selectContact": "בחר איש קשר לצפייה בסטטוסים שלו",
+    "download": "הורדה",
+    "downloading": "מוריד…",
+    "items": "פריטים",
+    "unread": "לא נקרא",
+    "typeImage": "תמונה",
+    "typeVideo": "וידאו",
+    "typeAudio": "שמע",
+    "typeGif": "GIF",
+    "typeText": "טקסט",
+    "expired": "פג תוקף",
+    "notConnected": "הסשן אינו מחובר",
+    "loadError": "טעינת הסטטוסים נכשלה",
+    "preview": "תצוגה מקדימה",
+    "previewing": "טוען…",
+    "refresh": "רענן",
+    "searchContacts": "חיפוש אנשי קשר…",
+    "closePreview": "סגור תצוגה מקדימה",
+    "downloadAll": "הורד הכל",
+    "downloadingAll": "מוריד…",
+    "downloadAllContact": "הורד את כל המדיה מאיש קשר זה"
+  },
+  "autoSave": {
+    "title": "שמירה אוטומטית של סטטוסים",
+    "enabled": "הפעל שמירה אוטומטית",
+    "intervalMinutes": "תדירות (דקות)",
+    "intervalHint": "כמה לעתים קרובות לסרוק סטטוסים חדשים (מינ׳: 5, מקס׳: 1440)",
+    "savePath": "נתיב שמירה",
+    "savePathHint": "התיקייה שאליה יישמרו קבצי המדיה",
+    "sessions": "סשנים למעקב",
+    "sessionsPlaceholder": "session1, session2 (ריק = כל הסשנים)",
+    "sessionsHint": "מזהי סשן מופרדים בפסיקים. ריק = כל הסשנים הפעילים.",
+    "save": "שמור",
+    "saving": "שומר…",
+    "cancel": "ביטול",
+    "runNow": "הפעל עכשיו",
+    "running": "מריץ…",
+    "jobQueued": "משימת שמירה אוטומטית נוספה לתור בהצלחה"
+  },
+  "eventViewer": {
+    "title": "צופה אירועים",
+    "connected": "מחובר",
+    "disconnected": "מנותק",
+    "pause": "השהה",
+    "resume": "המשך",
+    "clear": "נקה יומן",
+    "allSessions": "כל הסשנים",
+    "allEvents": "הכל",
+    "noEvents": "ממתין לאירועים…"
+  },
+  "labels": {
+    "title": "תוויות אנשי קשר",
+    "selectSession": "בחר סשן",
+    "allLabels": "תוויות",
+    "noLabels": "לא נמצאו תוויות",
+    "noChats": "אין צ'אטים עם תווית זו",
+    "selectLabel": "בחר תווית לצפייה בצ'אטים שלה",
+    "businessOnly": "תוויות זמינות רק בחשבונות WhatsApp Business",
+    "chatIdPlaceholder": "מזהה צ'אט (לדוגמה: 9721234@c.us)",
+    "addChat": "הוסף",
+    "removeLabel": "הסר תווית מצ'אט"
+  },
+  "catalog": {
+    "title": "קטלוג מוצרים",
+    "selectSession": "בחר סשן",
+    "businessOnly": "הקטלוג זמין רק בחשבונות WhatsApp Business",
+    "unnamed": "קטלוג עסקי",
+    "noProducts": "אין מוצרים בקטלוג",
+    "page": "עמוד",
+    "sendProduct": "שלח מוצר",
+    "sendCatalog": "שלח קטלוג",
+    "sendCatalogTitle": "שלח קטלוג מלא",
+    "chatIdPlaceholder": "מזהה צ'אט נמען",
+    "captionPlaceholder": "כיתוב (אופציונלי)",
+    "send": "שלח",
+    "sent": "נשלח בהצלחה!"
+  },
+  "groups": {
+    "title": "ניהול קבוצות",
+    "selectSession": "בחר סשן",
+    "createGroup": "צור קבוצה",
+    "noGroups": "לא נמצאו קבוצות",
+    "selectGroup": "בחר קבוצה לניהולה",
+    "notFound": "הקבוצה לא נמצאה",
+    "groupName": "שם הקבוצה",
+    "participantsPlaceholder": "מספרי משתתפים, מופרדים בפסיק",
+    "create": "צור",
+    "cancel": "ביטול",
+    "subject": "נושא",
+    "description": "תיאור",
+    "participants": "משתתפים",
+    "addParticipantsPlaceholder": "מספרים, מופרדים בפסיק",
+    "removeParticipant": "הסר משתתף",
+    "leaveGroup": "עזוב קבוצה",
+    "leaveConfirm": "האם אתה בטוח שברצונך לעזוב את הקבוצה?",
+    "save": "שמור",
+    "edit": "ערוך"
   }
 }
