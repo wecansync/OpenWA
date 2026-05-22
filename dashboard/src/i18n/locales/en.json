@@ -63,7 +63,6 @@
     "infrastructure": "Infrastructure",
     "plugins": "Plugins",
     "logs": "Logs",
-    "autoSave": "Auto-Save",
     "eventViewer": "Event Viewer",
     "labels": "Labels",
     "catalog": "Catalog",
@@ -561,23 +560,6 @@
     "downloadAll": "Download All",
     "downloadingAll": "Downloading…",
     "downloadAllContact": "Download all media from this contact"
-  },
-  "autoSave": {
-    "title": "Status Auto-Save",
-    "enabled": "Enable auto-save",
-    "intervalMinutes": "Interval (minutes)",
-    "intervalHint": "How often to poll for new statuses (min: 5, max: 1440)",
-    "savePath": "Save path",
-    "savePathHint": "Directory where media files will be saved",
-    "sessions": "Sessions to monitor",
-    "sessionsPlaceholder": "session1, session2 (leave empty for all)",
-    "sessionsHint": "Comma-separated session IDs. Empty = all active sessions.",
-    "save": "Save",
-    "saving": "Saving…",
-    "cancel": "Cancel",
-    "runNow": "Run Now",
-    "running": "Running…",
-    "jobQueued": "Auto-save job queued successfully"
   },
   "eventViewer": {
     "title": "Event Viewer",

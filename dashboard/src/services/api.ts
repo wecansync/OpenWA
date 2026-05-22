@@ -352,24 +352,6 @@ export const settingsApi = {
     }),
 };
 
-export interface AutoSaveConfig {
-  enabled: boolean;
-  intervalMinutes: number;
-  savePath: string;
-  sessions: string[];
-}
-
-export const autoSaveApi = {
-  getConfig: () => request<AutoSaveConfig>('/settings/status-auto-save'),
-  updateConfig: (config: Partial<AutoSaveConfig>) =>
-    request<AutoSaveConfig>('/settings/status-auto-save', {
-      method: 'PUT',
-      body: JSON.stringify(config),
-    }),
-  runNow: () =>
-    request<{ queued: boolean }>('/settings/status-auto-save/run-now', { method: 'PUT' }),
-};
-
 // =============================================================================
 // Plugin Types
 // =============================================================================

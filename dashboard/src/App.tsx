@@ -18,7 +18,6 @@ const MessageTester = lazy(() => import('./pages/MessageTester').then(m => ({ de
 const Infrastructure = lazy(() => import('./pages/Infrastructure').then(m => ({ default: m.Infrastructure })));
 const Plugins = lazy(() => import('./pages/Plugins'));
 const Status = lazy(() => import('./pages/Status').then(m => ({ default: m.Status })));
-const AutoSave = lazy(() => import('./pages/AutoSave').then(m => ({ default: m.AutoSave })));
 const EventViewer = lazy(() => import('./pages/EventViewer').then(m => ({ default: m.EventViewer })));
 const Labels = lazy(() => import('./pages/Labels').then(m => ({ default: m.Labels })));
 const Catalog = lazy(() => import('./pages/Catalog').then(m => ({ default: m.Catalog })));
@@ -112,7 +111,6 @@ function AppContent() {
             <Route path="logs" element={<Logs />} />
             <Route path="message-tester" element={<MessageTester />} />
             <Route path="status" element={<Status />} />
-            <Route path="auto-save" element={<AutoSave />} />
             <Route path="event-viewer" element={<EventViewer />} />
             <Route path="labels" element={<Labels />} />
             <Route path="catalog" element={<Catalog />} />

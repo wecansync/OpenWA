@@ -63,7 +63,6 @@
     "infrastructure": "תשתית",
     "plugins": "תוספים",
     "logs": "לוגים",
-    "autoSave": "שמירה אוטומטית",
     "eventViewer": "צופה אירועים",
     "labels": "תוויות",
     "catalog": "קטלוג",
@@ -561,23 +560,6 @@
     "downloadAll": "הורד הכל",
     "downloadingAll": "מוריד…",
     "downloadAllContact": "הורד את כל המדיה מאיש קשר זה"
-  },
-  "autoSave": {
-    "title": "שמירה אוטומטית של סטטוסים",
-    "enabled": "הפעל שמירה אוטומטית",
-    "intervalMinutes": "תדירות (דקות)",
-    "intervalHint": "כמה לעתים קרובות לסרוק סטטוסים חדשים (מינ׳: 5, מקס׳: 1440)",
-    "savePath": "נתיב שמירה",
-    "savePathHint": "התיקייה שאליה יישמרו קבצי המדיה",
-    "sessions": "סשנים למעקב",
-    "sessionsPlaceholder": "session1, session2 (ריק = כל הסשנים)",
-    "sessionsHint": "מזהי סשן מופרדים בפסיקים. ריק = כל הסשנים הפעילים.",
-    "save": "שמור",
-    "saving": "שומר…",
-    "cancel": "ביטול",
-    "runNow": "הפעל עכשיו",
-    "running": "מריץ…",
-    "jobQueued": "משימת שמירה אוטומטית נוספה לתור בהצלחה"
   },
   "eventViewer": {
     "title": "צופה אירועים",
