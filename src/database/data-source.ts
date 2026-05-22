@@ -8,7 +8,7 @@ const dbType = process.env.DATABASE_TYPE || 'sqlite';
 
 // SQLite configuration
 const sqliteDataSource = new DataSource({
-  type: 'sqlite',
+  type: 'better-sqlite3',
   database: process.env.DATABASE_NAME || './data/openwa.sqlite',
   entities: [__dirname + '/../**/*.entity{.ts,.js}'],
   migrations: [__dirname + '/migrations/*{.ts,.js}'],
