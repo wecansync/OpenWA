@@ -116,6 +116,21 @@ export class AuthService implements OnModuleInit {
     return { apiKey: saved, rawKey };
   }
 
+  async countKeys(): Promise<number> {
+    return this.apiKeyRepository.count();
+  }
+
+  async createFirstKey(name: string): Promise<string> {
+    const rawKey = `owa_k1_${randomBytes(32).toString('hex')}`;
+    await this.seedApiKey(rawKey, name, ApiKeyRole.ADMIN);
+    try {
+      writeFileSync(API_KEY_FILE, rawKey, 'utf-8');
+    } catch {
+      // non-fatal
+    }
+    return rawKey;
+  }
+
   async findAll(): Promise<ApiKey[]> {
     return this.apiKeyRepository.find({
       order: { createdAt: 'DESC' },

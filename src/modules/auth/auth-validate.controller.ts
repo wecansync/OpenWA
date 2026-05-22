@@ -1,5 +1,6 @@
-import { Controller, Post, Headers, HttpCode, HttpStatus } from '@nestjs/common';
+import { Controller, Post, Get, Body, Headers, HttpCode, HttpStatus, ConflictException } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiHeader } from '@nestjs/swagger';
+import { Public } from './decorators/auth.decorators';
 import { AuthService } from './auth.service';
 import { createLogger } from '../../common/services/logger.service';
 
@@ -9,6 +10,30 @@ export class AuthValidateController {
   private readonly logger = createLogger('AuthValidateController');
 
   constructor(private readonly authService: AuthService) {}
+
+  @Get('setup-status')
+  @Public()
+  @ApiOperation({ summary: 'Check if first-time setup is required (no auth needed)' })
+  @ApiResponse({ status: 200, description: 'Setup status' })
+  async setupStatus(): Promise<{ setupRequired: boolean }> {
+    const count = await this.authService.countKeys();
+    return { setupRequired: count === 0 };
+  }
+
+  @Post('setup')
+  @Public()
+  @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({ summary: 'Create the first admin key — only works when no keys exist (no auth needed)' })
+  @ApiResponse({ status: 201, description: 'First admin key created' })
+  @ApiResponse({ status: 409, description: 'Setup already completed' })
+  async setup(@Body() body: { name?: string }): Promise<{ apiKey: string }> {
+    const count = await this.authService.countKeys();
+    if (count > 0) {
+      throw new ConflictException('Setup already completed. Use the dashboard to manage API keys.');
+    }
+    const rawKey = await this.authService.createFirstKey(body.name || 'Admin Key');
+    return { apiKey: rawKey };
+  }
 
   @Post('validate')
   @HttpCode(HttpStatus.OK)

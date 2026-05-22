@@ -9,6 +9,7 @@ import { ErrorBoundary } from './components/ErrorBoundary';
 import './App.css';
 
 const Login = lazy(() => import('./pages/Login').then(m => ({ default: m.Login })));
+const Setup = lazy(() => import('./pages/Setup').then(m => ({ default: m.Setup })));
 const Dashboard = lazy(() => import('./pages/Dashboard').then(m => ({ default: m.Dashboard })));
 const Sessions = lazy(() => import('./pages/Sessions').then(m => ({ default: m.Sessions })));
 const Webhooks = lazy(() => import('./pages/Webhooks').then(m => ({ default: m.Webhooks })));
@@ -39,6 +40,7 @@ function AppContent() {
   const [isAuthenticated, setIsAuthenticated] = useState(!!savedKey);
   const [, setApiKey] = useState(savedKey || '');
   const { setRole, role } = useRole();
+  const [setupRequired, setSetupRequired] = useState<boolean | null>(null);
 
   const handleLogin = async (key: string) => {
     setApiKey(key);
@@ -69,6 +71,18 @@ function AppContent() {
     sessionStorage.removeItem('openwa_api_key');
   };
 
+  // Check if first-time setup is needed (only when not already authenticated)
+  useEffect(() => {
+    if (isAuthenticated) {
+      setSetupRequired(false);
+      return;
+    }
+    fetch('/api/auth/setup-status')
+      .then(res => res.json())
+      .then(data => setSetupRequired(data.setupRequired === true))
+      .catch(() => setSetupRequired(false));
+  }, [isAuthenticated]);
+
   // Re-validate and get role on mount if already authenticated
   useEffect(() => {
     if (!savedKey) return;
@@ -95,6 +109,17 @@ function AppContent() {
   );
 
   if (!isAuthenticated) {
+    // Still checking setup status
+    if (setupRequired === null) return loadingFallback;
+
+    if (setupRequired) {
+      return (
+        <Suspense fallback={loadingFallback}>
+          <Setup onComplete={key => { setSetupRequired(false); handleLogin(key); }} />
+        </Suspense>
+      );
+    }
+
     return <Suspense fallback={loadingFallback}><Login onLogin={handleLogin} /></Suspense>;
   }
 

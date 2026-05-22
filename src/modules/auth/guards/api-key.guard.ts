@@ -27,6 +27,13 @@ export class ApiKeyGuard implements CanActivate {
       throw new UnauthorizedException('API key is required');
     }
 
+    // Master key bypass — set API_MASTER_KEY in .env for emergency/first-run access
+    const masterKey = process.env.API_MASTER_KEY;
+    if (masterKey && apiKeyHeader === masterKey) {
+      (request as Request & { apiKey: { role: string } }).apiKey = { role: ApiKeyRole.ADMIN };
+      return true;
+    }
+
     // Get session ID from route params if present
     const sessionId = (request.params['sessionId'] || request.params['id']) as string | undefined;
     const clientIp = this.getClientIp(request);

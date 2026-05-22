@@ -1,6 +1,5 @@
-import { Injectable, BadRequestException } from '@nestjs/common';
+import { Injectable, BadRequestException, Optional } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
 import { Repository } from 'typeorm';
 import { SessionService } from '../session/session.service';
@@ -8,7 +7,6 @@ import { SendTextMessageDto, SendMediaMessageDto, MessageResponseDto } from './d
 import { MediaInput } from '../../engine/interfaces/whatsapp-engine.interface';
 import { Message, MessageDirection, MessageStatus } from './entities/message.entity';
 import { HookManager } from '../../core/hooks';
-import { QUEUE_NAMES } from '../queue/queue-names';
 
 export interface GetMessagesOptions {
   chatId?: string;
@@ -23,7 +21,7 @@ export class MessageService {
     private readonly messageRepository: Repository<Message>,
     private readonly sessionService: SessionService,
     private readonly hookManager: HookManager,
-    @InjectQueue(QUEUE_NAMES.SCHEDULED_MESSAGE) private readonly scheduledQueue: Queue,
+    @Optional() private readonly scheduledQueue: Queue | null,
   ) {}
 
   async sendText(sessionId: string, dto: SendTextMessageDto): Promise<MessageResponseDto> {
@@ -479,6 +477,7 @@ export class MessageService {
   }
 
   async scheduleText(sessionId: string, dto: SendTextMessageDto): Promise<{ jobId: string; scheduledAt: string }> {
+    if (!this.scheduledQueue) throw new BadRequestException('Scheduled messages require QUEUE_ENABLED=true');
     if (!dto.scheduledAt) {
       throw new BadRequestException('scheduledAt is required for scheduled messages');
     }
@@ -496,6 +495,7 @@ export class MessageService {
   }
 
   async getScheduledMessages(sessionId: string): Promise<{ jobId: string; chatId: string; text: string; scheduledAt: string }[]> {
+    if (!this.scheduledQueue) return [];
     const delayed = await this.scheduledQueue.getDelayed();
     return delayed
       .filter((job) => (job.data as { sessionId: string }).sessionId === sessionId)
@@ -512,6 +512,7 @@ export class MessageService {
   }
 
   async cancelScheduledMessage(sessionId: string, jobId: string): Promise<void> {
+    if (!this.scheduledQueue) throw new BadRequestException('Scheduled messages require QUEUE_ENABLED=true');
     const job = await this.scheduledQueue.getJob(jobId);
     if (!job) {
       throw new BadRequestException(`Scheduled message ${jobId} not found`);
