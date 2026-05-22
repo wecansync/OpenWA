@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>OpenWA — Message Tester</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: system-ui, sans-serif; background: #0f172a; color: #e2e8f0; min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 24px; }
+    .card { background: #1e293b; border: 1px solid #334155; border-radius: 12px; width: 100%; max-width: 520px; padding: 28px; }
+    h1 { font-size: 18px; font-weight: 600; margin-bottom: 4px; }
+    .subtitle { font-size: 13px; color: #64748b; margin-bottom: 24px; }
+    label { display: block; font-size: 13px; color: #94a3b8; margin-bottom: 6px; }
+    input, select, textarea {
+      width: 100%; background: #0f172a; border: 1px solid #334155; border-radius: 8px;
+      color: #e2e8f0; padding: 10px 12px; font-size: 14px; outline: none;
+      transition: border-color 0.15s;
+    }
+    input:focus, select:focus, textarea:focus { border-color: #6366f1; }
+    select option { background: #1e293b; }
+    .field { margin-bottom: 16px; }
+    textarea { resize: vertical; min-height: 80px; font-family: inherit; }
+    button {
+      width: 100%; padding: 11px; border: none; border-radius: 8px;
+      background: #6366f1; color: #fff; font-size: 14px; font-weight: 600;
+      cursor: pointer; transition: background 0.15s; margin-top: 4px;
+    }
+    button:hover:not(:disabled) { background: #4f46e5; }
+    button:disabled { opacity: 0.5; cursor: not-allowed; }
+    .response {
+      margin-top: 20px; padding: 14px; border-radius: 8px; font-size: 13px;
+      border: 1px solid; display: none;
+    }
+    .response.success { background: #052e16; border-color: #166534; color: #4ade80; }
+    .response.error   { background: #2d0a0a; border-color: #7f1d1d; color: #f87171; }
+    .response pre { margin-top: 8px; white-space: pre-wrap; word-break: break-all; font-family: monospace; font-size: 12px; opacity: 0.85; }
+    .row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .hint { font-size: 11px; color: #475569; margin-top: 4px; }
+    .tag { display: inline-block; background: #1d4ed8; color: #bfdbfe; font-size: 11px; padding: 2px 8px; border-radius: 4px; margin-bottom: 14px; }
+  </style>
+</head>
+<body>
+<div class="card">
+  <div class="tag">LOCAL DEV ONLY</div>
+  <h1>Message Tester</h1>
+  <p class="subtitle">Send WhatsApp messages directly via the OpenWA API</p>
+
+  <div class="row">
+    <div class="field">
+      <label>API Base URL</label>
+      <input id="baseUrl" value="http://localhost:2785/api" />
+    </div>
+    <div class="field">
+      <label>API Key</label>
+      <input id="apiKey" value="dev-admin-key" />
+    </div>
+  </div>
+
+  <div class="field">
+    <label>Session</label>
+    <select id="session">
+      <option value="">— loading sessions —</option>
+    </select>
+  </div>
+
+  <div class="field">
+    <label>Recipient Phone Number</label>
+    <input id="recipient" type="tel" placeholder="9627XXXXXXXX" />
+    <p class="hint">Digits only — country code included, no + or spaces. Auto-appends @c.us.</p>
+  </div>
+
+  <div class="field">
+    <label>Message Type</label>
+    <select id="msgType" onchange="toggleFields()">
+      <option value="text">Text</option>
+      <option value="image">Image</option>
+      <option value="video">Video</option>
+      <option value="audio">Audio</option>
+      <option value="document">Document</option>
+    </select>
+  </div>
+
+  <div class="field" id="fieldText">
+    <label>Message Text</label>
+    <textarea id="text" placeholder="Hello from OpenWA!"></textarea>
+  </div>
+
+  <div class="field" id="fieldMedia" style="display:none">
+    <label>Media URL</label>
+    <input id="mediaUrl" placeholder="https://example.com/file.jpg" />
+  </div>
+
+  <div class="field" id="fieldCaption" style="display:none">
+    <label>Caption (optional)</label>
+    <input id="caption" placeholder="Optional caption..." />
+  </div>
+
+  <div class="field" id="fieldFilename" style="display:none">
+    <label>Filename (optional)</label>
+    <input id="filename" placeholder="document.pdf" />
+  </div>
+
+  <button id="btn" onclick="send()">Send Message</button>
+
+  <div class="response" id="response">
+    <strong id="responseTitle"></strong>
+    <pre id="responseBody"></pre>
+  </div>
+</div>
+
+<script>
+  const $ = id => document.getElementById(id);
+
+  async function loadSessions() {
+    const base = $('baseUrl').value;
+    const key  = $('apiKey').value;
+    try {
+      const res  = await fetch(`${base}/sessions`, { headers: { 'X-API-Key': key } });
+      const data = await res.json();
+      const ready = (Array.isArray(data) ? data : []).filter(s => s.status === 'ready');
+      const sel = $('session');
+      sel.innerHTML = ready.length
+        ? ready.map(s => `<option value="${s.id}">${s.name} (${s.phone || 'no phone'})</option>`).join('')
+        : '<option value="">— no ready sessions —</option>';
+    } catch (e) {
+      $('session').innerHTML = '<option value="">— failed to load —</option>';
+    }
+  }
+
+  function toggleFields() {
+    const type = $('msgType').value;
+    $('fieldText').style.display     = type === 'text'     ? '' : 'none';
+    $('fieldMedia').style.display    = type !== 'text'     ? '' : 'none';
+    $('fieldCaption').style.display  = ['image','video'].includes(type) ? '' : 'none';
+    $('fieldFilename').style.display = type === 'document' ? '' : 'none';
+  }
+
+  function showResponse(ok, title, body) {
+    const el = $('response');
+    el.style.display = '';
+    el.className = `response ${ok ? 'success' : 'error'}`;
+    $('responseTitle').textContent = title;
+    $('responseBody').textContent  = JSON.stringify(body, null, 2);
+  }
+
+  async function send() {
+    const base      = $('baseUrl').value.replace(/\/$/, '');
+    const key       = $('apiKey').value;
+    const sessionId = $('session').value;
+    const phone     = $('recipient').value.replace(/[^0-9]/g, '');
+    const type      = $('msgType').value;
+
+    if (!sessionId) return showResponse(false, 'No ready session selected', {});
+    if (!phone)     return showResponse(false, 'Recipient is required', {});
+
+    const chatId = `${phone}@c.us`;
+    const btn    = $('btn');
+    btn.disabled = true;
+    btn.textContent = 'Sending…';
+
+    const endpoints = {
+      text:     `/sessions/${sessionId}/messages/send-text`,
+      image:    `/sessions/${sessionId}/messages/send-image`,
+      video:    `/sessions/${sessionId}/messages/send-video`,
+      audio:    `/sessions/${sessionId}/messages/send-audio`,
+      document: `/sessions/${sessionId}/messages/send-document`,
+    };
+
+    const bodies = {
+      text:     { chatId, text: $('text').value },
+      image:    { chatId, url: $('mediaUrl').value, caption: $('caption').value || undefined },
+      video:    { chatId, url: $('mediaUrl').value, caption: $('caption').value || undefined },
+      audio:    { chatId, url: $('mediaUrl').value },
+      document: { chatId, url: $('mediaUrl').value, filename: $('filename').value || undefined },
+    };
+
+    try {
+      const res  = await fetch(`${base}${endpoints[type]}`, {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json', 'X-API-Key': key },
+        body:    JSON.stringify(bodies[type]),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        showResponse(true, `Sent — messageId: ${data.messageId}`, data);
+      } else {
+        showResponse(false, `Error ${res.status}`, data);
+      }
+    } catch (e) {
+      showResponse(false, 'Network error', { error: e.message });
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'Send Message';
+    }
+  }
+
+  // Reload sessions when API config changes
+  $('baseUrl').addEventListener('change', loadSessions);
+  $('apiKey').addEventListener('change', loadSessions);
+
+  loadSessions();
+</script>
+</body>
+</html>
