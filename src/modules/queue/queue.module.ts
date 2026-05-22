@@ -6,9 +6,13 @@ import { BullMQAdapter } from '@bull-board/api/bullMQAdapter';
 import { ExpressAdapter } from '@bull-board/express';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { WebhookProcessor } from './processors/webhook.processor';
+import { StatusAutoSaveProcessor } from './processors/status-auto-save.processor';
 import { QUEUE_NAMES } from './queue-names';
 import { Webhook } from '../webhook/entities/webhook.entity';
 import { HooksModule } from '../../core/hooks/hooks.module';
+import { StatusAutoSaveService } from '../status/auto-save/status-auto-save.service';
+import { SessionModule } from '../session/session.module';
+// ScheduledMessageProcessor is registered in MessageModule to avoid circular deps
 
 // Re-export for backward compatibility
 export { QUEUE_NAMES } from './queue-names';
@@ -30,7 +34,10 @@ export { QUEUE_NAMES } from './queue-names';
         },
       }),
     }),
+    SessionModule,
     BullModule.registerQueue({ name: QUEUE_NAMES.WEBHOOK }),
+    BullModule.registerQueue({ name: QUEUE_NAMES.STATUS_AUTO_SAVE }),
+    BullModule.registerQueue({ name: QUEUE_NAMES.SCHEDULED_MESSAGE }),
     BullBoardModule.forRoot({
       route: '/admin/queues',
       adapter: ExpressAdapter,
@@ -39,8 +46,16 @@ export { QUEUE_NAMES } from './queue-names';
       name: QUEUE_NAMES.WEBHOOK,
       adapter: BullMQAdapter,
     }),
+    BullBoardModule.forFeature({
+      name: QUEUE_NAMES.STATUS_AUTO_SAVE,
+      adapter: BullMQAdapter,
+    }),
+    BullBoardModule.forFeature({
+      name: QUEUE_NAMES.SCHEDULED_MESSAGE,
+      adapter: BullMQAdapter,
+    }),
   ],
-  providers: [WebhookProcessor],
-  exports: [BullModule],
+  providers: [WebhookProcessor, StatusAutoSaveProcessor, StatusAutoSaveService],
+  exports: [BullModule, StatusAutoSaveService],
 })
 export class QueueModule {}

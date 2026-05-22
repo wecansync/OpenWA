@@ -32,6 +32,8 @@ export function MessageTester() {
   const [mediaUrl, setMediaUrl] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [response, setResponse] = useState<ApiResponse | null>(null);
+  const [scheduleEnabled, setScheduleEnabled] = useState(false);
+  const [scheduledAt, setScheduledAt] = useState('');
 
   const { data: groups = [], isLoading: loadingGroups } = useSessionGroupsQuery(
     session,
@@ -63,6 +65,16 @@ export function MessageTester() {
 
     try {
       let result;
+      if (messageType === 'text' && scheduleEnabled && scheduledAt) {
+        const job = await messageApi.scheduleText(session, chatId, content, new Date(scheduledAt).toISOString());
+        setResponse({
+          success: true,
+          messageId: job.jobId,
+          timestamp: job.scheduledAt,
+        });
+        setIsLoading(false);
+        return;
+      }
       if (messageType === 'text') {
         result = await messageApi.sendText(session, chatId, content);
       } else if (messageType === 'image') {
@@ -221,10 +233,38 @@ export function MessageTester() {
             </>
           )}
 
+          {messageType === 'text' && (
+            <div className="schedule-row">
+              <label className="schedule-toggle-label">
+                <input
+                  type="checkbox"
+                  checked={scheduleEnabled}
+                  onChange={(e) => setScheduleEnabled(e.target.checked)}
+                />
+                {t('messageTester.scheduleFor')}
+              </label>
+              {scheduleEnabled && (
+                <input
+                  type="datetime-local"
+                  className="schedule-datetime"
+                  value={scheduledAt}
+                  min={new Date(Date.now() + 61_000).toISOString().slice(0, 16)}
+                  onChange={(e) => setScheduledAt(e.target.value)}
+                />
+              )}
+            </div>
+          )}
+
           <button
             className="send-btn"
             onClick={handleSend}
-            disabled={!canWrite || isLoading || !session || (recipientType === 'group' ? !selectedGroup : !recipient)}
+            disabled={
+              !canWrite ||
+              isLoading ||
+              !session ||
+              (recipientType === 'group' ? !selectedGroup : !recipient) ||
+              (scheduleEnabled && !scheduledAt)
+            }
           >
             {isLoading ? <Loader2 className="animate-spin" size={18} /> : <Send size={18} />}
             {isLoading ? t('messageTester.sending') : canWrite ? t('messageTester.send') : t('messageTester.viewOnly')}

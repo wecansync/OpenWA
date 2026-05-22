@@ -1,11 +1,14 @@
 import { Injectable, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+import { InjectQueue } from '@nestjs/bullmq';
+import { Queue } from 'bullmq';
 import { Repository } from 'typeorm';
 import { SessionService } from '../session/session.service';
 import { SendTextMessageDto, SendMediaMessageDto, MessageResponseDto } from './dto';
 import { MediaInput } from '../../engine/interfaces/whatsapp-engine.interface';
 import { Message, MessageDirection, MessageStatus } from './entities/message.entity';
 import { HookManager } from '../../core/hooks';
+import { QUEUE_NAMES } from '../queue/queue-names';
 
 export interface GetMessagesOptions {
   chatId?: string;
@@ -20,6 +23,7 @@ export class MessageService {
     private readonly messageRepository: Repository<Message>,
     private readonly sessionService: SessionService,
     private readonly hookManager: HookManager,
+    @InjectQueue(QUEUE_NAMES.SCHEDULED_MESSAGE) private readonly scheduledQueue: Queue,
   ) {}
 
   async sendText(sessionId: string, dto: SendTextMessageDto): Promise<MessageResponseDto> {
@@ -472,6 +476,51 @@ export class MessageService {
       throw new BadRequestException(`Session '${sessionId}' is not active. Start the session first.`);
     }
     return engine;
+  }
+
+  async scheduleText(sessionId: string, dto: SendTextMessageDto): Promise<{ jobId: string; scheduledAt: string }> {
+    if (!dto.scheduledAt) {
+      throw new BadRequestException('scheduledAt is required for scheduled messages');
+    }
+    const sendAt = new Date(dto.scheduledAt).getTime();
+    const delay = sendAt - Date.now();
+    if (delay < 60_000) {
+      throw new BadRequestException('scheduledAt must be at least 60 seconds in the future');
+    }
+    const job = await this.scheduledQueue.add(
+      'send-text',
+      { sessionId, dto },
+      { delay, removeOnComplete: true, removeOnFail: 100 },
+    );
+    return { jobId: String(job.id), scheduledAt: dto.scheduledAt };
+  }
+
+  async getScheduledMessages(sessionId: string): Promise<{ jobId: string; chatId: string; text: string; scheduledAt: string }[]> {
+    const delayed = await this.scheduledQueue.getDelayed();
+    return delayed
+      .filter((job) => (job.data as { sessionId: string }).sessionId === sessionId)
+      .map((job) => {
+        const data = job.data as { sessionId: string; dto: SendTextMessageDto };
+        const processAt = Date.now() + (job.opts.delay ?? 0);
+        return {
+          jobId: String(job.id),
+          chatId: data.dto.chatId,
+          text: data.dto.text,
+          scheduledAt: new Date(processAt).toISOString(),
+        };
+      });
+  }
+
+  async cancelScheduledMessage(sessionId: string, jobId: string): Promise<void> {
+    const job = await this.scheduledQueue.getJob(jobId);
+    if (!job) {
+      throw new BadRequestException(`Scheduled message ${jobId} not found`);
+    }
+    const data = job.data as { sessionId: string };
+    if (data.sessionId !== sessionId) {
+      throw new BadRequestException(`Scheduled message ${jobId} does not belong to session ${sessionId}`);
+    }
+    await job.remove();
   }
 
   private buildMediaInput(dto: SendMediaMessageDto): MediaInput {

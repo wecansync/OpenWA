@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsString, IsNotEmpty, IsOptional, MaxLength, IsUrl, ValidateIf } from 'class-validator';
+import { IsString, IsNotEmpty, IsOptional, MaxLength, IsUrl, ValidateIf, IsDateString } from 'class-validator';
 
 export class SendTextMessageDto {
   @ApiProperty({
@@ -19,6 +19,14 @@ export class SendTextMessageDto {
   @IsNotEmpty()
   @MaxLength(4096)
   text: string;
+
+  @ApiPropertyOptional({
+    description: 'ISO 8601 timestamp to send the message at (must be ≥60s in the future)',
+    example: '2026-05-22T10:00:00.000Z',
+  })
+  @IsOptional()
+  @IsDateString()
+  scheduledAt?: string;
 }
 
 export class SendMediaMessageDto {

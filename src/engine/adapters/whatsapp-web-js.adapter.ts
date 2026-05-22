@@ -20,6 +20,8 @@ import {
   Channel,
   ChannelMessage,
   Status,
+  StatusContact,
+  MediaDownloadResult,
   TextStatusOptions,
   StatusResult,
   Catalog,
@@ -840,21 +842,97 @@ export class WhatsAppWebJsAdapter extends EventEmitter implements IWhatsAppEngin
   }
 
   // ========== Status/Stories (Phase 3) ==========
-  // Note: These are stub implementations - whatsapp-web.js has limited Status API support
   /* eslint-disable @typescript-eslint/require-await, @typescript-eslint/no-unused-vars */
 
-  async getContactStatuses(): Promise<Status[]> {
+  async getContactStatuses(): Promise<StatusContact[]> {
     this.ensureReady();
-    // whatsapp-web.js has limited Status API support
-    // This is a stub that can be enhanced when the library adds support
-    this.logger.warn('getContactStatuses not fully implemented in whatsapp-web.js');
-    return [];
+    const broadcasts = await (this.client as any).getBroadcasts();
+    const results: StatusContact[] = [];
+    for (const b of broadcasts) {
+      const contact = await (this.client as any).getContactById(b.id._serialized).catch(() => null);
+      const profilePicUrl = await (this.client as any).getProfilePicUrl(b.id._serialized).catch(() => undefined);
+      results.push({
+        contactId: b.id._serialized,
+        name: contact?.name ?? undefined,
+        pushName: contact?.pushname ?? undefined,
+        profilePicUrl: profilePicUrl ?? undefined,
+        totalCount: b.totalCount ?? (b.msgs?.length ?? 0),
+        unreadCount: b.unreadCount ?? 0,
+        lastTimestamp: new Date((b.timestamp ?? 0) * 1000),
+      });
+    }
+    return results;
   }
 
-  async getContactStatus(_contactId: string): Promise<Status[]> {
+  async getContactStatus(contactId: string): Promise<Status[]> {
     this.ensureReady();
-    this.logger.warn('getContactStatus not fully implemented in whatsapp-web.js');
-    return [];
+    const broadcast = await (this.client as any).getBroadcastById(contactId);
+    if (!broadcast || !broadcast.msgs) return [];
+    const msgs: any[] = Array.isArray(broadcast.msgs) ? broadcast.msgs : Object.values(broadcast.msgs);
+    return msgs.map((msg: any) => {
+      const rawType: string = msg.type ?? 'chat';
+      let type: Status['type'] = 'text';
+      if (rawType === 'image') type = 'image';
+      else if (rawType === 'video') {
+        type = msg.isGif ? 'gif' : 'video';
+      } else if (rawType === 'audio' || rawType === 'ptt') type = 'audio';
+      const hasMedia = type !== 'text';
+      const ts = new Date((msg.timestamp ?? 0) * 1000);
+      const expiresAt = msg.statusExpiration
+        ? new Date(msg.statusExpiration * 1000)
+        : new Date(ts.getTime() + 24 * 60 * 60 * 1000);
+      return {
+        id: msg.id._serialized,
+        messageId: msg.id._serialized,
+        contact: { id: contactId },
+        type,
+        hasMedia,
+        caption: msg.body ?? undefined,
+        timestamp: ts,
+        expiresAt,
+      };
+    });
+  }
+
+  async downloadStatusMedia(contactId: string, messageId: string): Promise<MediaDownloadResult> {
+    this.ensureReady();
+    const broadcast = await (this.client as any).getBroadcastById(contactId);
+    if (!broadcast || !broadcast.msgs) {
+      const { NotFoundException } = await import('@nestjs/common');
+      throw new NotFoundException('Status media not found or has expired');
+    }
+    const msgs: any[] = Array.isArray(broadcast.msgs) ? broadcast.msgs : Object.values(broadcast.msgs);
+    const msg = msgs.find((m: any) => m.id._serialized === messageId);
+    if (!msg) {
+      const { NotFoundException } = await import('@nestjs/common');
+      throw new NotFoundException('Status media not found or has expired');
+    }
+    const timeoutMs = 30_000;
+    let media: any;
+    try {
+      media = await Promise.race([
+        msg.downloadMedia(),
+        new Promise((_, reject) =>
+          setTimeout(() => reject(new Error('TIMEOUT')), timeoutMs),
+        ),
+      ]);
+    } catch (err: any) {
+      if (err?.message === 'TIMEOUT') {
+        const { HttpException, HttpStatus } = await import('@nestjs/common');
+        throw new HttpException('Media download timed out. Please try again.', HttpStatus.REQUEST_TIMEOUT);
+      }
+      throw err;
+    }
+    if (!media) {
+      const { NotFoundException } = await import('@nestjs/common');
+      throw new NotFoundException('Status media not found or has expired');
+    }
+    return {
+      data: media.data,
+      mimetype: media.mimetype,
+      filename: media.filename ?? undefined,
+      filesize: media.filesize ?? undefined,
+    };
   }
 
   async postTextStatus(_text: string, _options?: TextStatusOptions): Promise<StatusResult> {
