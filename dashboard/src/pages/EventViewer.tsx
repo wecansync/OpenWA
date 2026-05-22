@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Radio, Trash2, Pause, Play, Filter } from 'lucide-react';
+import { Trash2, Pause, Play, Filter } from 'lucide-react';
 import { io, Socket } from 'socket.io-client';
 import { useDocumentTitle } from '../hooks/useDocumentTitle';
 import { useSessionsQuery } from '../hooks/queries';
