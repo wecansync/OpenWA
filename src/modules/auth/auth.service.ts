@@ -20,40 +20,8 @@ export class AuthService implements OnModuleInit {
   ) {}
 
   async onModuleInit(): Promise<void> {
-    // Seed a default API key if none exist
     const count = await this.apiKeyRepository.count();
-    let displayKey: string;
-    let isNewKey = false;
 
-    if (count === 0) {
-      // Use predictable key in development, random key in production
-      displayKey =
-        process.env.NODE_ENV === 'production' ? `owa_k1_${randomBytes(32).toString('hex')}` : 'dev-admin-key';
-
-      await this.seedApiKey(displayKey, 'Default Admin Key', ApiKeyRole.ADMIN);
-      isNewKey = true;
-
-      // Save raw key to file for startup script to read
-      try {
-        writeFileSync(API_KEY_FILE, displayKey, 'utf-8');
-      } catch (err) {
-        this.logger.warn('Could not save API key file', { error: String(err) });
-      }
-    } else {
-      // Read saved API key from file if exists
-      if (existsSync(API_KEY_FILE)) {
-        try {
-          displayKey = readFileSync(API_KEY_FILE, 'utf-8').trim();
-        } catch (error) {
-          this.logger.warn(`Failed to read API key file: ${API_KEY_FILE}`, { error: String(error) });
-          displayKey = '(check dashboard for keys)';
-        }
-      } else {
-        displayKey = '(check dashboard for keys)';
-      }
-    }
-
-    // Always show the welcome banner on startup
     const apiBaseUrl = process.env.BASE_URL || `http://localhost:${process.env.PORT || 2785}`;
     const dashboardUrl = process.env.DASHBOARD_URL || `http://localhost:${process.env.DASHBOARD_PORT || 2886}`;
 
@@ -65,12 +33,21 @@ export class AuthService implements OnModuleInit {
     this.logger.log(`  📊 Dashboard: ${dashboardUrl}`);
     this.logger.log(`  📚 API Docs:  ${apiBaseUrl}/api/docs`);
     this.logger.log('');
-    if (isNewKey) {
-      this.logger.log('  🔑 API Key (newly created):');
+    if (count === 0) {
+      this.logger.log('  🔑 No API keys found — open the dashboard to complete first-time setup.');
     } else {
+      // Read saved API key from file if exists (for display only)
+      let displayKey = '(check dashboard for keys)';
+      if (existsSync(API_KEY_FILE)) {
+        try {
+          displayKey = readFileSync(API_KEY_FILE, 'utf-8').trim();
+        } catch (error) {
+          this.logger.warn(`Failed to read API key file: ${API_KEY_FILE}`, { error: String(error) });
+        }
+      }
       this.logger.log('  🔑 API Key:');
+      this.logger.log(`     ${displayKey}`);
     }
-    this.logger.log(`     ${displayKey}`);
     this.logger.log('');
     this.logger.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
     this.logger.log('');
@@ -78,7 +55,7 @@ export class AuthService implements OnModuleInit {
 
   private async seedApiKey(rawKey: string, name: string, role: ApiKeyRole): Promise<ApiKey> {
     const keyHash = this.hashKey(rawKey);
-    const keyPrefix = rawKey.substring(0, 12);
+    const keyPrefix = rawKey.substring(0, 8);
 
     const apiKey = this.apiKeyRepository.create({
       name,
@@ -94,7 +71,7 @@ export class AuthService implements OnModuleInit {
     // Generate secure random key: owa_k1_<32 bytes hex>
     const rawKey = `owa_k1_${randomBytes(32).toString('hex')}`;
     const keyHash = this.hashKey(rawKey);
-    const keyPrefix = rawKey.substring(0, 12);
+    const keyPrefix = rawKey.substring(0, 8);
 
     const apiKey = this.apiKeyRepository.create({
       name: dto.name,
