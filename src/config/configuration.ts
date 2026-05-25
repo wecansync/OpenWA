@@ -31,6 +31,8 @@ export default () => ({
     type: process.env.DATABASE_TYPE || 'sqlite',
     // SQLite path (used when type is sqlite)
     database: process.env.DATABASE_NAME || './data/openwa.sqlite',
+    // PostgreSQL database name (used when type is postgres) — defaults to 'openwa'
+    dbName: process.env.DATABASE_DBNAME || 'openwa',
     // PostgreSQL/MySQL connection (used when type is postgres/mysql)
     host: process.env.DATABASE_HOST || 'localhost',
     port: parseInt(process.env.DATABASE_PORT || '5432', 10),

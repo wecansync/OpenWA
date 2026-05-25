@@ -34,10 +34,12 @@ const queryClient = new QueryClient({
   },
 });
 
+const SKIP_AUTH = import.meta.env.VITE_SKIP_AUTH === 'true';
+
 function AppContent() {
   // Initialize from sessionStorage to avoid setState in effect
   const savedKey = sessionStorage.getItem('openwa_api_key');
-  const [isAuthenticated, setIsAuthenticated] = useState(!!savedKey);
+  const [isAuthenticated, setIsAuthenticated] = useState(SKIP_AUTH || !!savedKey);
   const [, setApiKey] = useState(savedKey || '');
   const { setRole, role } = useRole();
   const [setupRequired, setSetupRequired] = useState<boolean | null>(null);
@@ -70,6 +72,11 @@ function AppContent() {
     setRole(null);
     sessionStorage.removeItem('openwa_api_key');
   };
+
+  // When auth is skipped, set admin role immediately
+  useEffect(() => {
+    if (SKIP_AUTH) setRole('admin');
+  }, [setRole]);
 
   // Check if first-time setup is needed (only when not already authenticated)
   useEffect(() => {

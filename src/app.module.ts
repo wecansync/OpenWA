@@ -45,18 +45,47 @@ if (process.env.QUEUE_ENABLED === 'true') {
       load: [configuration],
     }),
 
-    // Main Database (always SQLite - boot config)
+    // Main Database (auth/audit — follows DATABASE_TYPE like the data connection)
     TypeOrmModule.forRootAsync({
       name: 'main',
       imports: [ConfigModule],
       inject: [ConfigService],
-      useFactory: (configService: ConfigService) => ({
-        type: 'better-sqlite3' as const,
-        database: configService.get<string>('database.database', './data/main.sqlite'),
-        entities: [__dirname + '/modules/auth/**/*.entity{.ts,.js}', __dirname + '/modules/audit/**/*.entity{.ts,.js}'],
-        synchronize: true,
-        logging: configService.get<boolean>('database.logging', false),
-      }),
+      useFactory: (configService: ConfigService) => {
+        const dbType = configService.get<string>('dataDatabase.type', 'sqlite');
+        const entities = [
+          __dirname + '/modules/auth/**/*.entity{.ts,.js}',
+          __dirname + '/modules/audit/**/*.entity{.ts,.js}',
+        ];
+        const logging = configService.get<boolean>('database.logging', false);
+
+        if (dbType === 'postgres') {
+          return {
+            type: 'postgres' as const,
+            host: configService.get<string>('dataDatabase.host'),
+            port: configService.get<number>('dataDatabase.port'),
+            username: configService.get<string>('dataDatabase.username'),
+            password: configService.get<string>('dataDatabase.password'),
+            database: configService.get<string>('dataDatabase.dbName', 'openwa'),
+            entities,
+            synchronize: true,
+            logging,
+            ssl: configService.get<boolean>('dataDatabase.ssl', false)
+              ? { rejectUnauthorized: configService.get<boolean>('dataDatabase.sslRejectUnauthorized', true) }
+              : false,
+            extra: {
+              max: configService.get<number>('dataDatabase.poolSize', 10),
+            },
+          };
+        }
+
+        return {
+          type: 'better-sqlite3' as const,
+          database: configService.get<string>('database.database', './data/main.sqlite'),
+          entities,
+          synchronize: true,
+          logging,
+        };
+      },
     }),
 
     // Data Storage Database (pluggable - user data)
@@ -84,7 +113,7 @@ if (process.env.QUEUE_ENABLED === 'true') {
             port: configService.get<number>('dataDatabase.port'),
             username: configService.get<string>('dataDatabase.username'),
             password: configService.get<string>('dataDatabase.password'),
-            database: 'openwa',
+            database: configService.get<string>('dataDatabase.dbName', 'openwa'),
             // Never auto-sync Postgres in production; rely on migrations.
             synchronize: configService.get<boolean>('dataDatabase.synchronize', false),
             migrationsRun: true,

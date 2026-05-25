@@ -13,6 +13,13 @@ export class ApiKeyGuard implements CanActivate {
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
+    // Skip all auth when SKIP_AUTH=true (testing only — never use in production)
+    if (process.env.SKIP_AUTH === 'true') {
+      const request = context.switchToHttp().getRequest<Request>();
+      (request as Request & { apiKey: { role: string } }).apiKey = { role: ApiKeyRole.ADMIN };
+      return true;
+    }
+
     // Check if route is marked as public
     const isPublic = this.reflector.getAllAndOverride<boolean>(PUBLIC_KEY, [context.getHandler(), context.getClass()]);
 
