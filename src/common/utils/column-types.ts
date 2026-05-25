@@ -16,7 +16,7 @@ const isPostgres = (): boolean => process.env.DATABASE_TYPE === 'postgres';
 export const jsonColumnType = (): 'jsonb' | 'simple-json' => (isPostgres() ? 'jsonb' : 'simple-json');
 
 /**
- * Returns 'timestamp' for PostgreSQL, 'text' for SQLite.
- * Use with DateTransformer for SQLite compatibility.
+ * Returns 'timestamp' for PostgreSQL, 'datetime' for SQLite.
+ * Both are handled natively by TypeORM — no transformer needed.
  */
-export const dateColumnType = (): 'timestamp' | 'text' => (isPostgres() ? 'timestamp' : 'text');
+export const dateColumnType = (): 'timestamp' | 'datetime' => (isPostgres() ? 'timestamp' : 'datetime');
