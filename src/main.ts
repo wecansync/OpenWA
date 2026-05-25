@@ -6,6 +6,10 @@ import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import helmet from 'helmet';
+import { join } from 'path';
+import { existsSync } from 'fs';
+import { Request, Response, NextFunction } from 'express';
+import express from 'express';
 import { AppModule } from './app.module';
 import { ShutdownService } from './common/services/shutdown.service';
 // Configuration loading order (later sources do NOT override earlier ones):
@@ -113,10 +117,22 @@ async function bootstrap() {
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api/docs', app, document);
 
+  // Serve dashboard static files (built React app)
+  const dashboardDist = join(__dirname, '..', 'dashboard', 'dist');
+  if (existsSync(dashboardDist)) {
+    app.use(express.static(dashboardDist));
+    // SPA fallback: any non-API route serves index.html so React Router works
+    app.use((req: Request, res: Response, next: NextFunction) => {
+      if (req.path.startsWith('/api/')) return next();
+      res.sendFile(join(dashboardDist, 'index.html'));
+    });
+  }
+
   const port = process.env.PORT || 2785;
   await app.listen(port);
 
   console.log(`🚀 OpenWA is running on: http://localhost:${port}`);
+  console.log(`📊 Dashboard:   http://localhost:${port}`);
   console.log(`📚 Swagger docs: http://localhost:${port}/api/docs`);
 }
 
